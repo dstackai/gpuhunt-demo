@@ -3,6 +3,7 @@ from typing import List, Tuple
 
 import gpuhunt
 import gpuhunt.providers.vastai
+import gpuhunt.providers.tensordock
 import pandas as pd
 import streamlit as st
 
@@ -20,9 +21,10 @@ st.set_page_config(
 
 @st.cache_data
 def get_catalog() -> gpuhunt.Catalog:
-    catalog = gpuhunt.Catalog(fill_missing=False, auto_reload=True)
+    catalog = gpuhunt.Catalog(balance_resources=False, auto_reload=True)
     catalog.load()
     catalog.add_provider(gpuhunt.providers.vastai.VastAIProvider())
+    catalog.add_provider(gpuhunt.providers.tensordock.TensorDockProvider())
     return catalog
 
 
@@ -31,7 +33,7 @@ def get_all_offers() -> List[gpuhunt.CatalogItem]:
     return get_catalog().query(provider=PROVIDERS)
 
 
-PROVIDERS = ["aws", "azure", "datacrunch", "gcp", "nebius", "lambdalabs", "vastai"]
+PROVIDERS = ["aws", "azure", "datacrunch", "gcp", "nebius", "lambdalabs", "tensordock"]
 ALL_OFFERS = get_all_offers()
 ALL_GPU_NAME = sorted(set(i.gpu_name for i in ALL_OFFERS if i.gpu_count > 0))
 ALL_GPU_MEM = [0.0] + sorted(set(i.gpu_memory for i in ALL_OFFERS if i.gpu_count > 0))
@@ -104,6 +106,11 @@ st.dataframe(
 Leave feedback at [dstackai/gpuhunt](https://github.com/dstackai/gpuhunt)
 
 ## How it works
+
+`gpuhunt` aggregates offers from AWS, Azure, DataCrunch, GCP, and LambdaLabs every night.
+TensorDock and VastAI offers are fetched in real-time.
+
+You could also use `gpuhunt` as a Python library:
 
 ```bash
 pip install gpuhunt

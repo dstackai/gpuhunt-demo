@@ -33,7 +33,7 @@ def get_all_offers() -> List[gpuhunt.CatalogItem]:
     return get_catalog().query(provider=PROVIDERS)
 
 
-PROVIDERS = ["aws", "azure", "datacrunch", "gcp", "nebius", "lambdalabs", "tensordock"]
+PROVIDERS = ["aws", "azure", "datacrunch", "gcp", "nebius", "lambdalabs", "tensordock", "vastai"]
 ALL_OFFERS = get_all_offers()
 ALL_GPU_NAME = sorted(set(i.gpu_name for i in ALL_OFFERS if i.gpu_count > 0))
 ALL_GPU_MEM = [0.0] + sorted(set(i.gpu_memory for i in ALL_OFFERS if i.gpu_count > 0))

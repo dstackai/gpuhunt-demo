@@ -1,4 +1,6 @@
 import dataclasses
+import datetime
+import time
 from typing import List, Tuple
 
 import gpuhunt
@@ -21,7 +23,7 @@ st.set_page_config(
 
 @st.cache_data
 def get_catalog() -> gpuhunt.Catalog:
-    catalog = gpuhunt.Catalog(balance_resources=False, auto_reload=True)
+    catalog = gpuhunt.Catalog(balance_resources=True, auto_reload=True)
     catalog.load()
     catalog.add_provider(gpuhunt.providers.vastai.VastAIProvider())
     catalog.add_provider(gpuhunt.providers.tensordock.TensorDockProvider())
@@ -33,16 +35,18 @@ def get_all_offers() -> List[gpuhunt.CatalogItem]:
     return get_catalog().query(provider=PROVIDERS)
 
 
-PROVIDERS = ["aws", "azure", "datacrunch", "gcp", "nebius", "lambdalabs", "tensordock", "vastai"]
+PROVIDERS = ["aws", "azure", "datacrunch", "gcp", "lambdalabs", "tensordock", "vastai"]
 ALL_OFFERS = get_all_offers()
 ALL_GPU_NAME = sorted(set(i.gpu_name for i in ALL_OFFERS if i.gpu_count > 0))
 ALL_GPU_MEM = [0.0] + sorted(set(i.gpu_memory for i in ALL_OFFERS if i.gpu_count > 0))
 ALL_GPU_COUNT = sorted(set(i.gpu_count for i in ALL_OFFERS))
 ALL_CPU = sorted(set(i.cpu for i in ALL_OFFERS))
 ALL_MEMORY = sorted(set(i.memory for i in ALL_OFFERS))
+CACHE_TTL = 5 * 60
 
 DEFAULT_PROVIDERS = [p for p in PROVIDERS if p not in ["vastai"]]
 DEFAULT_GPUS = ["H100", "A100", "A6000", "A10", "A10G", "L40", "L4", "T4", "V100", "P100"]
+DEFAULT_GPUS = [gpu for gpu in DEFAULT_GPUS if gpu in ALL_GPU_NAME]
 
 
 def format_version(v: str) -> str:
@@ -52,7 +56,7 @@ def format_version(v: str) -> str:
 f"""
 # `gpuhunt`: find the cheapest GPU :dna:
 
-Catalog version: `{format_version(get_catalog().get_latest_version())}`
+Static catalog version: `{format_version(get_catalog().get_latest_version())}`
 """
 
 with st.sidebar:
@@ -76,9 +80,10 @@ def get_offers(
         spot: str,
         cpu: Tuple[int],
         memory: Tuple[float],
-) -> pd.DataFrame:
+        ttl: int,
+) -> Tuple[datetime.datetime, pd.DataFrame]:
     offers = get_catalog().query(
-        provider=providers or None,
+        provider=providers or PROVIDERS,
         min_gpu_count=gpu_count[0], max_gpu_count=gpu_count[1],
         min_gpu_memory=gpu_memory[0], max_gpu_memory=gpu_memory[-1],
         min_cpu=cpu[0], max_cpu=cpu[-1],
@@ -86,20 +91,22 @@ def get_offers(
         gpu_name=gpu_name or None,
         spot={"interruptable": True, "on-demand": False, "any": None}[spot],
     )
+    updated_at = datetime.datetime.utcnow()
     df = pd.DataFrame([dataclasses.asdict(i) for i in offers])
-    if df.empty:
-        return df
-    df["gpu"] = df.apply(lambda row: "" if row.gpu_count == 0 else f"{row.gpu_name} ({row.gpu_memory:g} GB)", axis=1)
-    df = df[["provider", "price", "gpu_count", "gpu", "cpu", "memory", "spot", "location", "instance_name"]]
-    return df
+    if not df.empty:
+        df["gpu"] = df.apply(lambda row: "" if row.gpu_count == 0 else f"{row.gpu_name} ({row.gpu_memory:g} GB)", axis=1)
+        df = df[["provider", "price", "gpu_count", "gpu", "cpu", "memory", "spot", "location", "instance_name"]]
+    return updated_at, df
 
 
+updated_at, df = get_offers(providers, gpu_count, gpu_memory, gpu_name, spot, cpu, memory, round(time.time() / CACHE_TTL))
 st.dataframe(
-    get_offers(providers, gpu_count, gpu_memory, gpu_name, spot, cpu, memory),
+    df,
     column_config={
         "price": st.column_config.NumberColumn(format="$%.3f"),
     },
 )
+st.write(f"{len(df)} offers queried at `{updated_at} UTC`")
 
 
 """
@@ -124,3 +131,5 @@ pip install gpuhunt
     )
 ```
 """
+
+st.markdown("<style>footer::after { content: ' by 🧬 dstack' }</style>", unsafe_allow_html=True)

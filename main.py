@@ -132,4 +132,7 @@ pip install gpuhunt
 ```
 """
 
-st.markdown("<style>footer::after { content: ' by 🧬 dstack' }</style>", unsafe_allow_html=True)
+"""
+---
+Created by 🧬 [dstack](https://dstack.ai)
+"""

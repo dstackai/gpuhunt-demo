@@ -11,7 +11,7 @@ import streamlit as st
 
 
 st.set_page_config(
-    page_title="gpuhunt | Find the cheapest GPU",
+    page_title="gpuhunt | Find the cheapest cloud GPU",
     layout="wide",
     menu_items={
         "Get help": "https://github.com/dstackai/gpuhunt/issues",
@@ -54,7 +54,7 @@ def format_version(v: str) -> str:
 
 
 f"""
-# `gpuhunt`: find the cheapest GPU :dna:
+# `gpuhunt`: find the cheapest cloud GPU :dna:
 
 Static catalog version: `{format_version(get_catalog().get_latest_version())}`
 """
@@ -110,12 +110,14 @@ st.write(f"{len(df)} offers queried at", updated_at.strftime('`%Y-%m-%d %H:%M:%S
 
 
 """
-Leave feedback at [dstackai/gpuhunt](https://github.com/dstackai/gpuhunt)
+Source code & feedback [dstackai/gpuhunt](https://github.com/dstackai/gpuhunt)
 
 ## How it works
 
 `gpuhunt` aggregates offers from AWS, Azure, DataCrunch, GCP, and LambdaLabs every night.
 TensorDock and VastAI offers are fetched in real-time.
+
+> Note, this demo doesn't account for availability.
 
 You could also use `gpuhunt` as a Python library:
 

@@ -106,7 +106,7 @@ st.dataframe(
         "price": st.column_config.NumberColumn(format="$%.3f"),
     },
 )
-st.write(f"{len(df)} offers queried at `{updated_at} UTC`")
+st.write(f"{len(df)} offers queried at", updated_at.strftime('`%Y-%m-%d %H:%M:%S UTC`'))
 
 
 """
